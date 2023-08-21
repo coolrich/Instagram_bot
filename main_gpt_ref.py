@@ -168,16 +168,6 @@ def scroll_window_down(length_in_pages: int = 0.5, delay: int = 1):
     return is_updated
 
 
-def find_download_icon():
-    try:
-        while True:
-            driver.find_element(by=By.XPATH, value="//div[@data-visualcompletion=\"loading-state\"]")
-            print("Waiting for download...")
-            sleep(10)
-    except NoSuchElementException:
-        print("There are no download icons on the page.")
-
-
 def random_waiting(t1=0.5, t2=1.5):
     time.sleep(t1 + random.random() * (t2 - t1))
 

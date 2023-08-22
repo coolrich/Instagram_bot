@@ -121,51 +121,42 @@ def turn_off_notifications():
         print("There is no notification of turn on instagram notifications.")
 
 
-to_height_position = None
+height_position = None
 
 
-# def scroll_window_down(steps_count: int = 3, delay: int = 1):
-#     inner_screen_height = driver.execute_script("return window.innerHeight")
-#     page_height = driver.execute_script("return document.body.scrollHeight;")
-#     step = int(inner_screen_height / steps_count)
-#     global current_height_position
-#     if current_height_position is None:
-#         current_height_position = step
-#     is_updated = False
-#     while True:
-#         if inner_screen_height + driver.execute_script("return window.pageYOffset") >= page_height:
-#             break
-#         driver.execute_script(f"window.scrollTo({{ top: {current_height_position}, behavior: 'smooth' }});")
-#         print("Scrolling down")
-#         # driver.execute_script(f"window.scrollTo(0, {current_height_position});")
-#         time.sleep(delay)
-#         current_height_position += step
-#         if not is_updated:
-#             is_updated = True
-#     return is_updated
+def is_page_bottom_reached(current_page_height, page_height):
+    return current_page_height + driver.execute_script("return window.pageYOffset") >= page_height
+
 
 def scroll_window_down(length_in_pages: int = 0.5, delay: int = 1):
     inner_screen_height = driver.execute_script("return window.innerHeight")
     step = length_in_pages * inner_screen_height
-    page_height = driver.execute_script("return document.body.scrollHeight;")
-    global to_height_position
-    if to_height_position is None:
-        to_height_position = driver.execute_script("return window.scrollY")
-    is_updated = False
+    previous_page_height = driver.execute_script("return document.body.scrollHeight;")
+    global height_position
+    if height_position is None:
+        height_position = driver.execute_script("return window.scrollY")
+    is_dynamically_updated = False
     scroll_count = 0
     while True:
-        if inner_screen_height + driver.execute_script("return window.pageYOffset") >= page_height:
+        current_page_height = driver.execute_script("return document.body.scrollHeight;")
+        if not is_page_updated(previous_page_height, current_page_height):
+            is_dynamically_updated = True
+        if is_page_bottom_reached(inner_screen_height, previous_page_height):
             break
-        driver.execute_script(f"window.scrollTo({{ top: {to_height_position}, behavior: 'smooth' }});")
-        print(f"Scrolling down: {scroll_count}")
+        scroll_page_down_to(height_position)
         scroll_count += 1
-        # driver.execute_script(f"window.scrollTo(0, {current_height_position});")
+        print(f"Scrolling down: {scroll_count}")
+        height_position += step
         time.sleep(delay)
-        to_height_position += step
-        if not is_updated:
-            is_updated = True
-    print("Scrolling is finished.")
-    return is_updated
+    return is_dynamically_updated
+
+
+def scroll_page_down_to(to_height_position):
+    driver.execute_script(f"window.scrollTo({{ top: {to_height_position}, behavior: 'smooth' }});")
+
+
+def is_page_updated(previous_page_height, current_page_height):
+    return current_page_height > previous_page_height
 
 
 def random_waiting(t1=0.5, t2=1.5):
@@ -177,11 +168,11 @@ def looking_for_posts():
     # pattern = r'https://www.instagram.com/p/[A-Za-z0-9]+/\?next=.*'
     pattern = r'.*/p/'
     posts = set()
-    is_dynamically_updated = False
-    for _ in range(25):
+    for _ in range(3):
+        is_dynamically_updated = False
         while not is_dynamically_updated:
             is_dynamically_updated = scroll_window_down()
-        is_dynamically_updated = False
+        print("Scrolling is finished.")
         gather_post_elements(posts)
         random_waiting()
 
@@ -190,8 +181,9 @@ def gather_post_elements(posts):
     is_new_posts_added = False
     try:
         a_tags = []
-        time_tags = driver.find_elements(by=By.TAG_NAME, value='time')
-        for time_tag in time_tags:
+        time_elems = driver.find_elements(by=By.TAG_NAME, value='time')
+        pprint.pp(f"Count of \'time\' elements:{len(time_elems)}")
+        for time_tag in time_elems:
             some_tag = time_tag
             while True:
                 some_tag = some_tag.find_element(by=By.XPATH, value="..")
@@ -221,7 +213,7 @@ my_password = getpass('Enter your password: ')
 
 if __name__ == "__main__":
     # try:
-        # sign_in(login, password)
+    # sign_in(login, password)
     sign_in_through_FB(my_login, my_password)
     sleep(2)
     turn_off_notifications()

@@ -128,7 +128,7 @@ def is_page_bottom_reached(current_page_height, page_height):
     return current_page_height + driver.execute_script("return window.pageYOffset") >= page_height
 
 
-def scroll_window_down(length_in_pages: int = 0.5, delay: int = 1):
+def scroll_window_down_and_gather_elems(posts, length_in_pages: int = 0.5, delay: int = 1):
     inner_screen_height = driver.execute_script("return window.innerHeight")
     step = length_in_pages * inner_screen_height
     previous_page_height = driver.execute_script("return document.body.scrollHeight;")
@@ -143,15 +143,16 @@ def scroll_window_down(length_in_pages: int = 0.5, delay: int = 1):
             is_dynamically_updated = True
         if is_page_bottom_reached(inner_screen_height, previous_page_height):
             break
-        scroll_page_down_to(height_position)
+        scroll_page_to(height_position)
         scroll_count += 1
         print(f"Scrolling down: {scroll_count}")
+        gather_post_elements(posts)
         height_position += step
         time.sleep(delay)
     return is_dynamically_updated
 
 
-def scroll_page_down_to(to_height_position):
+def scroll_page_to(to_height_position):
     driver.execute_script(f"window.scrollTo({{ top: {to_height_position}, behavior: 'smooth' }});")
 
 
@@ -171,18 +172,31 @@ def looking_for_posts():
     for _ in range(3):
         is_dynamically_updated = False
         while not is_dynamically_updated:
-            is_dynamically_updated = scroll_window_down()
+            is_dynamically_updated = scroll_window_down_and_gather_elems(posts)
         print("Scrolling is finished.")
-        gather_post_elements(posts)
+        # gather_post_elements(posts)
+        show_post_elems(posts)
+        pprint.pp(f"Count of all post elems:{len(posts)}")
         random_waiting()
 
+
+def show_post_elems(posts):
+    pprint.pp([p for p in posts])
+
+def gather_and_test_article_elems(posts):
+    article_elems = driver.find_elements(by=By.TAG_NAME, value="article")
+    pprint.pp(article_elems)
+    pos = (article_elems[-1].find_element(by=By.XPATH, value="//*[contains(text(), \"Подобається\")]").
+           location_once_scrolled_into_view)
+    print(pos)
+    scroll_page_to(pos['y'])
 
 def gather_post_elements(posts):
     is_new_posts_added = False
     try:
         a_tags = []
         time_elems = driver.find_elements(by=By.TAG_NAME, value='time')
-        pprint.pp(f"Count of \'time\' elements:{len(time_elems)}")
+        print(f"Count of \'time\' elements:{len(time_elems)}")
         for time_tag in time_elems:
             some_tag = time_tag
             while True:
@@ -193,13 +207,13 @@ def gather_post_elements(posts):
         print("Looking for elements with posts")
         hrefs = [tag.get_attribute('href') for tag in a_tags]
         new_posts = set()
-        new_posts.update(filter(lambda tag: re.search(pattern, tag) is not None, hrefs))
+        # filter(lambda tag: re.search(pattern, tag) is not None, )
+        new_posts.update(hrefs)
         for p in new_posts:
             if p not in posts:
                 is_new_posts_added = True
                 break
         posts.update(new_posts)
-        pprint.pp([p for p in posts])
     except StaleElementReferenceException as sere:
         print("Stale element reference exception during finding posts")
         print(sere)
@@ -222,6 +236,7 @@ if __name__ == "__main__":
     sleep(2)
     turn_off_notifications()
     sleep(2)
+    # gather_and_test_article_elems(None)
     looking_for_posts()
     # except Exception as e:
     #     print("Something way wrong...")

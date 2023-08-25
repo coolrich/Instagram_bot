@@ -1,2 +1,2 @@
 # Instagram_bot
-This is a simple project to test selenium applied to instagram.
+This is a simple project to test the use of selenium on Instagram.

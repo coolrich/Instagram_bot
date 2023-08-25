@@ -236,7 +236,7 @@ if __name__ == "__main__":
     sleep(2)
     turn_off_notifications()
     sleep(2)
-    # gather_and_test_article_elems(None)
+    # gather_and_test_article_elems(None) \
     looking_for_posts()
     # except Exception as e:
     #     print("Something way wrong...")
